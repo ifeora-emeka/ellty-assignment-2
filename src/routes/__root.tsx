@@ -5,40 +5,63 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { LoginForm, SignupForm } from '@/components/auth';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
+import { ApiError } from '@/lib/api-client';
 
 type AuthDialog = 'login' | 'signup' | null;
 
 export function RootLayout() {
-  const { state, login, signup, logout } = useAuth();
+  const authContext = useAuth();
   const [authDialog, setAuthDialog] = useState<AuthDialog>(null);
 
   const handleLogin = async (data: { username: string; password: string }) => {
     try {
-      await login(data.username, data.password);
+      await authContext.login(data.username, data.password);
       setAuthDialog(null);
       toast.success('Successfully logged in!');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Login failed');
+      if (error instanceof ApiError && error.data) {
+        const errorData = error.data as { error?: string; errors?: Array<{ message: string }> };
+        if (errorData.errors && errorData.errors.length > 0) {
+          toast.error(errorData.errors[0].message);
+        } else if (errorData.error) {
+          toast.error(errorData.error);
+        } else {
+          toast.error('Login failed');
+        }
+      } else {
+        toast.error(error instanceof Error ? error.message : 'Login failed');
+      }
       throw error;
     }
   };
 
   const handleSignup = async (data: { username: string; password: string }) => {
     try {
-      await signup(data.username, data.password);
+      await authContext.signup(data.username, data.password);
       setAuthDialog(null);
       toast.success('Account created successfully!');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Signup failed');
+      if (error instanceof ApiError && error.data) {
+        const errorData = error.data as { error?: string; errors?: Array<{ message: string }> };
+        if (errorData.errors && errorData.errors.length > 0) {
+          toast.error(errorData.errors[0].message);
+        } else if (errorData.error) {
+          toast.error(errorData.error);
+        } else {
+          toast.error('Signup failed');
+        }
+      } else {
+        toast.error(error instanceof Error ? error.message : 'Signup failed');
+      }
       throw error;
     }
   };
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await authContext.logout();
       toast.success('Logged out successfully');
-    } catch (error) {
+    } catch {
       toast.error('Logout failed');
     }
   };
@@ -58,12 +81,12 @@ export function RootLayout() {
   return (
     <>
       <Layout
-        user={state.user}
+        user={authContext.user}
         onLogin={openLoginDialog}
         onSignup={openSignupDialog}
         onLogout={handleLogout}
       >
-        <Outlet context={{ openLoginDialog, openSignupDialog }} />
+        <Outlet />
       </Layout>
 
       <Dialog open={authDialog === 'login'} onOpenChange={(open) => !open && closeAuthDialog()}>

@@ -16,6 +16,7 @@ describe('PostTree', () => {
       user: {
         id: 'user1',
         username: 'alice',
+        createdAt: '2025-11-20T10:00:00Z',
       },
     },
     {
@@ -27,6 +28,7 @@ describe('PostTree', () => {
       user: {
         id: 'user2',
         username: 'bob',
+        createdAt: '2025-11-21T10:00:00Z',
       },
     },
   ];
@@ -59,6 +61,7 @@ describe('PostTree', () => {
             user: {
               id: 'user2',
               username: 'bob',
+              createdAt: '2025-11-21T10:00:00Z',
             },
             parentOperation: {
               id: 'op1',

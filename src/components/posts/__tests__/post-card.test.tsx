@@ -10,6 +10,7 @@ describe('PostCard', () => {
     id: '1',
     value: 42,
     username: 'testuser',
+    userCreatedAt: '2025-11-20T10:00:00Z',
     createdAt: '2025-11-24T10:00:00Z',
   };
 
@@ -57,12 +58,12 @@ describe('PostCard', () => {
     render(
       <PostCard
         {...baseProps}
-        hasReplies={true}
+        replyCount={2}
         onViewDetails={mockViewDetails}
       />
     );
 
-    const viewButton = screen.getByText('View Replies');
+    const viewButton = screen.getByText('2 Replies');
     fireEvent.click(viewButton);
 
     expect(mockViewDetails).toHaveBeenCalledWith('1');

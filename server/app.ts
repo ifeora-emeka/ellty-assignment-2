@@ -2,21 +2,44 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import session from 'express-session';
+import cors from 'cors';
 import passport from './configs/passport.config.js';
 import apiRouter from './apis/api.routes.js';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
+import BetterSqlite3StoreFactory from 'better-sqlite3-session-store';
+import Database from 'better-sqlite3';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 
+if (process.env.NODE_ENV === 'development') {
+  app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+  }));
+}
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const BetterSqlite3Store = BetterSqlite3StoreFactory(session);
+const sessionDbPath = process.env.NODE_ENV === 'production' 
+  ? '/app/data/sessions.db' 
+  : './prisma/sessions.db';
+const sessionDb = new Database(sessionDbPath);
+
 app.use(
   session({
+    store: new BetterSqlite3Store({
+      client: sessionDb,
+      expired: {
+        clear: true,
+        intervalMs: 1000 * 60 * 15,
+      },
+    }),
     secret: `${process.env.SESSION_SECRET}`,
     resave: false,
     saveUninitialized: false,
@@ -24,6 +47,7 @@ app.use(
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 1000 * 60 * 60 * 24 * 7,
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
     },
   })
 );

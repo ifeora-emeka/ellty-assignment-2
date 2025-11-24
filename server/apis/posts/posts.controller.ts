@@ -35,6 +35,7 @@ export const createPost = async (req: Request, res: Response) => {
                     select: {
                         id: true,
                         username: true,
+                        createdAt: true,
                     },
                 },
             },
@@ -60,6 +61,7 @@ export const getPosts = async (req: Request, res: Response) => {
                     select: {
                         id: true,
                         username: true,
+                        createdAt: true,
                     },
                 },
                 operation: true,
@@ -93,6 +95,7 @@ export const getPost = async (req: Request, res: Response) => {
                     select: {
                         id: true,
                         username: true,
+                        createdAt: true,
                     },
                 },
                 operation: true,
@@ -102,6 +105,7 @@ export const getPost = async (req: Request, res: Response) => {
                             select: {
                                 id: true,
                                 username: true,
+                                createdAt: true,
                             },
                         },
                         operation: true,
@@ -113,6 +117,7 @@ export const getPost = async (req: Request, res: Response) => {
                             select: {
                                 id: true,
                                 username: true,
+                                createdAt: true,
                             },
                         },
                         operation: true,
@@ -175,6 +180,7 @@ export const createReply = async (req: Request, res: Response) => {
                     select: {
                         id: true,
                         username: true,
+                        createdAt: true,
                     },
                 },
                 operation: true,
@@ -184,6 +190,7 @@ export const createReply = async (req: Request, res: Response) => {
                             select: {
                                 id: true,
                                 username: true,
+                                createdAt: true,
                             },
                         },
                     },

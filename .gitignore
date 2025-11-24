@@ -20,6 +20,8 @@ dev.db
 test.db
 prisma/*.db
 prisma/*.db-journal
+prisma/*.db-shm
+prisma/*.db-wal
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

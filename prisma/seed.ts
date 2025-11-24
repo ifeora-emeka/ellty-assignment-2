@@ -70,9 +70,11 @@ async function createReplyChain(
 async function main() {
   console.log('🌱 Starting database seed...');
 
+  console.log('🧹 Cleaning database...');
   await prisma.operation.deleteMany();
   await prisma.post.deleteMany();
   await prisma.user.deleteMany();
+  console.log('✅ Database cleaned');
 
   console.log('📝 Creating users...');
   const numUsers = 20;
@@ -82,17 +84,26 @@ async function main() {
     const username = faker.internet.username().toLowerCase().slice(0, 20);
     const hashedPassword = await bcrypt.hash('password123', 10);
 
-    const user = await prisma.user.create({
-      data: {
-        username: `${username}_${i}`,
-        password: hashedPassword,
-      },
-    });
+    try {
+      const user = await prisma.user.create({
+        data: {
+          username: `${username}_${i}`,
+          password: hashedPassword,
+        },
+      });
 
-    users.push(user);
+      users.push(user);
+    } catch (error) {
+      console.error(`Failed to create user ${i}:`, error);
+    }
   }
 
   console.log(`✅ Created ${users.length} users`);
+
+  if (users.length === 0) {
+    console.error('❌ No users created, cannot proceed with seeding posts');
+    return;
+  }
 
   console.log('📊 Creating posts with reply chains...');
   const numRootPosts = 50;
@@ -101,20 +112,24 @@ async function main() {
     const user = faker.helpers.arrayElement(users);
     const value = faker.number.float({ min: 1, max: 1000, fractionDigits: 2 });
 
-    const post = await prisma.post.create({
-      data: {
-        value,
-        userId: user.id,
-      },
-    });
+    try {
+      const post = await prisma.post.create({
+        data: {
+          value,
+          userId: user.id,
+        },
+      });
 
-    const maxDepth = faker.number.int({ min: 2, max: 5 });
-    const replyUser = faker.helpers.arrayElement(users);
-    
-    await createReplyChain(post.id, value, replyUser.id, 0, maxDepth);
+      const maxDepth = faker.number.int({ min: 2, max: 5 });
+      const replyUser = faker.helpers.arrayElement(users);
+      
+      await createReplyChain(post.id, value, replyUser.id, 0, maxDepth);
 
-    if ((i + 1) % 10 === 0) {
-      console.log(`  Created ${i + 1}/${numRootPosts} root posts with replies`);
+      if ((i + 1) % 10 === 0) {
+        console.log(`  Created ${i + 1}/${numRootPosts} root posts with replies`);
+      }
+    } catch (error) {
+      console.error(`Failed to create post ${i}:`, error);
     }
   }
 

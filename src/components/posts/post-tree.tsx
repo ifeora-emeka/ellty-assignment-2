@@ -15,9 +15,13 @@ interface Post {
   user: {
     id: string;
     username: string;
+    createdAt: string;
   };
   parentOperation?: Operation;
   children?: Post[];
+  _count?: {
+    replies: number;
+  };
 }
 
 interface PostTreeProps {
@@ -47,13 +51,14 @@ export function PostTree({
             id={post.id}
             value={post.value}
             username={post.user.username}
+            userCreatedAt={post.user.createdAt}
             operation={post.parentOperation?.operation}
             operand={post.parentOperation?.operand}
             createdAt={post.createdAt}
             isAuthenticated={isAuthenticated}
             onReply={onReply}
             onViewDetails={onViewDetails}
-            hasReplies={(post.children?.length ?? 0) > 0}
+            replyCount={post._count?.replies ?? post.children?.length ?? 0}
           />
           
           {post.children && post.children.length > 0 && (

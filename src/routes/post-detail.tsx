@@ -1,44 +1,38 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
+import { useParams, useNavigate, useRouteContext } from '@tanstack/react-router';
 import { PostTree, OperationForm } from '@/components/posts';
 import { PostTreeSkeleton } from '@/components/ui/loading-spinner';
+import { ErrorMessage } from '@/components/ui/error-message';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft } from 'lucide-react';
-import { mockPostDetail, mockLoadingDelay } from '@/__mocks__';
-import type { MockPost } from '@/__mocks__';
+import { usePost, useCreateReply } from '@/lib/hooks/use-posts';
+import { useAuth } from '@/hooks/use-auth';
+import type { Post } from '@/lib/types/api.types';
+import { toast } from 'sonner';
+import { ApiError } from '@/lib/api-client';
 
 export function PostDetailPage() {
   const { postId } = useParams({ strict: false });
   const navigate = useNavigate();
-  const [post, setPost] = useState<MockPost | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { isAuthenticated } = useAuth();
+  const routeContext = useRouteContext({ strict: false });
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string>('');
   const [selectedPostValue, setSelectedPostValue] = useState<number>(0);
   const [replyError, setReplyError] = useState<string>('');
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        await mockLoadingDelay();
-        if (postId) {
-          const foundPost = mockPostDetail(postId);
-          setPost(foundPost || null);
-        }
-      } catch (error) {
-        console.error('Failed to load post:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, [postId]);
+  const { data: post, isLoading, error: fetchError, refetch } = usePost(postId || '');
+  const { mutate: createReply, isPending: isCreatingReply, reset: resetReplyError } = useCreateReply();
 
   const handleReply = (postId: string) => {
-    const findPostValue = (p: MockPost): number | null => {
+    if (!isAuthenticated) {
+      if (routeContext?.openLoginDialog) {
+        routeContext.openLoginDialog();
+      }
+      return;
+    }
+
+    const findPostValue = (p: Post): number | null => {
       if (p.id === postId) return p.value;
       if (p.children) {
         for (const child of p.children) {
@@ -55,42 +49,43 @@ export function PostDetailPage() {
       setSelectedPostValue(value);
       setReplyDialogOpen(true);
       setReplyError('');
+      resetReplyError();
     }
   };
 
-  const handleSubmitReply = async (_operation: string, _operand: number) => {
+  const handleSubmitReply = async (operation: string, operand: number) => {
     setReplyError('');
-    setSubmitting(true);
-    try {
-      await mockLoadingDelay();
-      setReplyDialogOpen(false);
-      const loadData = async () => {
-        setLoading(true);
-        try {
-          await mockLoadingDelay();
-          if (postId) {
-            const foundPost = mockPostDetail(postId);
-            setPost(foundPost || null);
+    createReply(
+      { postId: selectedPostId, data: { operation, operand } },
+      {
+        onSuccess: () => {
+          setReplyDialogOpen(false);
+          toast.success('Reply added successfully!');
+          refetch();
+        },
+        onError: (error) => {
+          if (error instanceof ApiError && error.data) {
+            const errorData = error.data as { error?: string; errors?: Array<{ message: string }> };
+            if (errorData.errors && errorData.errors.length > 0) {
+              setReplyError(errorData.errors[0].message);
+            } else if (errorData.error) {
+              setReplyError(errorData.error);
+            } else {
+              setReplyError('Failed to add reply');
+            }
+          } else {
+            setReplyError('Failed to add reply');
           }
-        } catch (error) {
-          console.error('Failed to load post:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      await loadData();
-    } catch (error) {
-      setReplyError(error instanceof Error ? error.message : 'Failed to add reply');
-    } finally {
-      setSubmitting(false);
-    }
+        },
+      }
+    );
   };
 
   const handleBack = () => {
     navigate({ to: '/' });
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
         <Button variant="ghost" onClick={handleBack}>
@@ -98,6 +93,18 @@ export function PostDetailPage() {
           Back
         </Button>
         <PostTreeSkeleton count={1} />
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Button variant="ghost" onClick={handleBack}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+        <ErrorMessage message="Failed to load post. Please try again later." />
       </div>
     );
   }
@@ -130,7 +137,7 @@ export function PostDetailPage() {
 
       <PostTree
         posts={[post]}
-        isAuthenticated={true}
+        isAuthenticated={isAuthenticated}
         onReply={handleReply}
       />
 
@@ -145,7 +152,7 @@ export function PostDetailPage() {
             onSubmit={handleSubmitReply}
             onCancel={() => setReplyDialogOpen(false)}
             error={replyError}
-            disabled={submitting}
+            disabled={isCreatingReply}
           />
         </DialogContent>
       </Dialog>

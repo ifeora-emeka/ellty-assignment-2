@@ -24,6 +24,9 @@ export interface Post {
   user: User;
   operation?: Operation;
   children?: Post[];
+  _count?: {
+    replies: number;
+  };
 }
 
 export interface CreatePostRequest {
