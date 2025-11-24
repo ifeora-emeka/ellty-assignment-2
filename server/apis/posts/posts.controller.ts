@@ -84,61 +84,72 @@ export const getPosts = async (req: Request, res: Response) => {
     }
 };
 
+const fetchPostWithAllReplies = async (postId: string): Promise<any> => {
+    const post = await prisma.post.findUnique({
+        where: { id: postId },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    username: true,
+                    createdAt: true,
+                },
+            },
+            operation: true,
+            replies: {
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            username: true,
+                            createdAt: true,
+                        },
+                    },
+                    operation: true,
+                },
+                orderBy: {
+                    createdAt: 'asc',
+                },
+            },
+        },
+    });
+
+    if (!post) return null;
+
+    const repliesWithChildren = await Promise.all(
+        post.replies.map(async (reply) => {
+            const children = await fetchPostWithAllReplies(reply.id);
+            return {
+                ...reply,
+                children: children?.replies || [],
+                _count: { replies: children?.replies?.length || 0 },
+            };
+        })
+    );
+
+    return {
+        ...post,
+        replies: repliesWithChildren,
+    };
+};
+
 export const getPost = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
-        const post = await prisma.post.findUnique({
-            where: { id },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        username: true,
-                        createdAt: true,
-                    },
-                },
-                operation: true,
-                parent: {
-                    include: {
-                        user: {
-                            select: {
-                                id: true,
-                                username: true,
-                                createdAt: true,
-                            },
-                        },
-                        operation: true,
-                    },
-                },
-                replies: {
-                    include: {
-                        user: {
-                            select: {
-                                id: true,
-                                username: true,
-                                createdAt: true,
-                            },
-                        },
-                        operation: true,
-                        _count: {
-                            select: {
-                                replies: true,
-                            },
-                        },
-                    },
-                    orderBy: {
-                        createdAt: 'asc',
-                    },
-                },
-            },
-        });
+        const post = await fetchPostWithAllReplies(id);
 
         if (!post) {
             return res.status(404).json({ error: 'Post not found' });
         }
 
-        res.json({ post });
+        const postWithChildren = {
+            ...post,
+            children: post.replies,
+            _count: { replies: post.replies?.length || 0 },
+        };
+
+        res.json({ post: postWithChildren });
     } catch {
         res.status(500).json({ error: 'Internal server error' });
     }

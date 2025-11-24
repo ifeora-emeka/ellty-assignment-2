@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useRouteContext } from '@tanstack/react-router';
 import { PostTree, NewPostForm, OperationForm } from '@/components/posts';
 import { PostTreeSkeleton } from '@/components/ui/loading-spinner';
-import { ErrorMessage } from '@/components/ui/error-message';
+import { SectionPlaceholder } from '@/components/ui/section-placeholder';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useInfinitePosts, useCreatePost, useCreateReply } from '@/lib/hooks/use-posts';
@@ -146,9 +146,14 @@ export function HomePage() {
   if (fetchError) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
-        <ErrorMessage
-          title="Failed to load posts"
-          message={fetchError instanceof Error ? fetchError.message : 'An error occurred'}
+        <SectionPlaceholder
+          heading="Failed to load posts"
+          paragraph={fetchError instanceof Error ? fetchError.message : 'An error occurred while loading the calculations. Please try again.'}
+          type="error"
+          action={{
+            label: 'Retry',
+            onClick: () => window.location.reload(),
+          }}
         />
       </div>
     );
@@ -181,9 +186,15 @@ export function HomePage() {
       {isLoading ? (
         <PostTreeSkeleton count={3} />
       ) : allPosts.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No calculations yet. Start a new one!</p>
-        </div>
+        <SectionPlaceholder
+          heading="No calculations yet"
+          paragraph="Be the first to start a mathematical conversation. Create a new calculation to get started!"
+          type="empty"
+          action={authContext.isAuthenticated ? {
+            label: 'Create Calculation',
+            onClick: () => setNewPostDialogOpen(true),
+          } : undefined}
+        />
       ) : (
         <>
           <PostTree

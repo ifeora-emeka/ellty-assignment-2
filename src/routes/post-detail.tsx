@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate, useRouteContext } from '@tanstack/react-router';
 import { PostTree, OperationForm } from '@/components/posts';
 import { PostTreeSkeleton } from '@/components/ui/loading-spinner';
-import { ErrorMessage } from '@/components/ui/error-message';
+import { SectionPlaceholder } from '@/components/ui/section-placeholder';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft } from 'lucide-react';
@@ -104,7 +104,15 @@ export function PostDetailPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
-        <ErrorMessage message="Failed to load post. Please try again later." />
+        <SectionPlaceholder
+          heading="Failed to load calculation"
+          paragraph="Unable to load this calculation. Please check your connection and try again."
+          type="error"
+          action={{
+            label: 'Retry',
+            onClick: () => refetch(),
+          }}
+        />
       </div>
     );
   }
@@ -116,9 +124,15 @@ export function PostDetailPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Post not found</p>
-        </div>
+        <SectionPlaceholder
+          heading="Calculation not found"
+          paragraph="This calculation doesn't exist or may have been removed."
+          type="empty"
+          action={{
+            label: 'Go back home',
+            onClick: handleBack,
+          }}
+        />
       </div>
     );
   }

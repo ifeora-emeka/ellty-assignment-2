@@ -30,17 +30,15 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    mode: 'onChange',
     defaultValues: {
       username: '',
       password: '',
     },
   });
 
-  const handleSubmit = async (values: LoginFormValues) => {
-    try {
-      await onSubmit(values);
-    } catch (error) {
-    }
+  const handleSubmit = (values: LoginFormValues) => {
+    onSubmit(values);
   };
 
   return (
