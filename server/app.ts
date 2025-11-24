@@ -4,6 +4,8 @@ import { fileURLToPath } from 'url';
 import session from 'express-session';
 import passport from './configs/passport.config.js';
 import apiRouter from './apis/api.routes.js';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,7 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    secret: `${process.env.SESSION_SECRET}`,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -28,6 +30,16 @@ app.use(
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+const swaggerDocumentPath = path.join(__dirname, 'apis', 'api.openapi.yml');
+app.use('/api-docs', swaggerUi.serve, (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const swaggerDocument = YAML.load(swaggerDocumentPath);
+  swaggerUi.setup(swaggerDocument, {
+    swaggerOptions: {
+      url: undefined,
+    },
+  })(req, res, next);
+});
 
 app.use('/api', apiRouter);
 

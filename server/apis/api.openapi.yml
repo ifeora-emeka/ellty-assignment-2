@@ -1,0 +1,504 @@
+openapi: 3.0.0
+info:
+  title: Number Tree API
+  version: 1.0.0
+  description: |
+    API for a collaborative number tree application where users can create number posts and perform mathematical operations to create reply chains.
+    
+    ## Features
+    - User authentication (signup, login, logout)
+    - Create number posts
+    - Reply to posts with mathematical operations (+, -, *, /)
+    - View post trees with nested replies
+    
+    ## Authentication
+    This API uses session-based authentication via HTTP-only cookies. After logging in, the session cookie is automatically included in subsequent requests.
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: User authentication endpoints
+  - name: Posts
+    description: Number posts and operations
+
+paths:
+  /api/auth/signup:
+    post:
+      summary: Create a new user account
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  description: Unique username
+                password:
+                  type: string
+                  minLength: 6
+                  description: User password
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Validation error or username already exists
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      errors:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            field:
+                              type: string
+                            message:
+                              type: string
+                  - type: object
+                    properties:
+                      error:
+                        type: string
+                        example: Username already exists
+        '500':
+          description: Internal server error
+
+  /api/auth/login:
+    post:
+      summary: Login to existing account
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: connect.sid=s%3A...; Path=/; HttpOnly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid credentials
+        '500':
+          description: Internal server error
+
+  /api/auth/logout:
+    post:
+      summary: Logout from current session
+      tags:
+        - Authentication
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logged out successfully
+        '401':
+          description: Not authenticated
+        '500':
+          description: Internal server error
+
+  /api/auth/me:
+    get:
+      summary: Get current user information
+      tags:
+        - Authentication
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: User information retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized
+
+  /api/posts:
+    get:
+      summary: Get all root posts
+      tags:
+        - Posts
+      description: Retrieve all posts that don't have a parent (root level posts)
+      responses:
+        '200':
+          description: List of root posts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Post'
+
+    post:
+      summary: Create a new root post
+      tags:
+        - Posts
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - value
+              properties:
+                value:
+                  type: number
+                  description: The initial number value
+      responses:
+        '201':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  post:
+                    $ref: '#/components/schemas/Post'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized
+        '500':
+          description: Internal server error
+
+  /api/posts/{id}:
+    get:
+      summary: Get post with replies
+      tags:
+        - Posts
+      description: Retrieve a specific post along with all its replies (children)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Post ID
+      responses:
+        '200':
+          description: Post retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  post:
+                    $ref: '#/components/schemas/PostWithReplies'
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Post not found
+
+  /api/posts/{id}/reply:
+    post:
+      summary: Add a reply to a post
+      tags:
+        - Posts
+      security:
+        - cookieAuth: []
+      description: Create a mathematical operation on an existing post to generate a new result
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Parent post ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - operation
+                - value
+              properties:
+                operation:
+                  type: string
+                  enum: ['+', '-', '*', '/']
+                  description: Mathematical operation to perform
+                value:
+                  type: number
+                  description: The number to use in the operation
+      responses:
+        '201':
+          description: Reply created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  post:
+                    $ref: '#/components/schemas/Post'
+                  operation:
+                    $ref: '#/components/schemas/Operation'
+        '400':
+          description: Validation error or division by zero
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      errors:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            field:
+                              type: string
+                            message:
+                              type: string
+                  - type: object
+                    properties:
+                      error:
+                        type: string
+                        example: Division by zero is not allowed
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized
+        '404':
+          description: Parent post not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Parent post not found
+        '500':
+          description: Internal server error
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: connect.sid
+      description: Session cookie set after successful login
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+        username:
+          type: string
+          description: Username
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+      required:
+        - id
+        - username
+        - createdAt
+        - updatedAt
+
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique post identifier
+        value:
+          type: number
+          description: The resulting number value
+        userId:
+          type: string
+          format: uuid
+          description: ID of the user who created the post
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the parent post (null for root posts)
+        createdAt:
+          type: string
+          format: date-time
+          description: Post creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+      required:
+        - id
+        - value
+        - userId
+        - createdAt
+        - updatedAt
+
+    PostWithReplies:
+      allOf:
+        - $ref: '#/components/schemas/Post'
+        - type: object
+          properties:
+            replies:
+              type: array
+              items:
+                type: object
+                properties:
+                  post:
+                    $ref: '#/components/schemas/Post'
+                  operation:
+                    $ref: '#/components/schemas/Operation'
+
+    Operation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique operation identifier
+        operation:
+          type: string
+          enum: ['+', '-', '*', '/']
+          description: The mathematical operation performed
+        value:
+          type: number
+          description: The operand value used in the operation
+        parentPostId:
+          type: string
+          format: uuid
+          description: ID of the parent post this operation was applied to
+        resultPostId:
+          type: string
+          format: uuid
+          description: ID of the resulting post
+        createdAt:
+          type: string
+          format: date-time
+          description: Operation creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+      required:
+        - id
+        - operation
+        - value
+        - parentPostId
+        - resultPostId
+        - createdAt
+        - updatedAt
