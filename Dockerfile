@@ -3,7 +3,10 @@ FROM node:20-alpine AS base
 FROM base AS deps
 WORKDIR /app
 COPY package*.json ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./
 RUN npm ci
+RUN npx prisma generate
 
 FROM base AS builder
 WORKDIR /app
@@ -17,6 +20,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=8080
+ENV DATABASE_URL="file:/app/data/prod.db"
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 expressuser
@@ -24,10 +28,12 @@ RUN adduser --system --uid 1001 expressuser
 COPY --from=builder --chown=expressuser:nodejs /app/dist ./dist
 COPY --from=builder --chown=expressuser:nodejs /app/dist-server ./dist-server
 COPY --from=builder --chown=expressuser:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=expressuser:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=expressuser:nodejs /app/prisma.config.ts ./
 COPY --from=builder --chown=expressuser:nodejs /app/package*.json ./
 
 USER expressuser
 
 EXPOSE 8080
 
-CMD ["node", "dist-server/server.js"]
+CMD npx prisma migrate deploy && node dist-server/server.js

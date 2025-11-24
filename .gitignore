@@ -15,6 +15,10 @@ dist-server
 .env
 .github/copilot-instructions.md
 .github/assessment.md
+.github/tasks.md
+dev.db
+prisma/*.db
+prisma/*.db-journal
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -25,3 +29,5 @@ dist-server
 *.njsproj
 *.sln
 *.sw?
+
+/generated/prisma
