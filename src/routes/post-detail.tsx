@@ -26,7 +26,9 @@ export function PostDetailPage() {
 
   const handleReply = (postId: string) => {
     if (!isAuthenticated) {
-      routeContext?.openLoginDialog?.();
+      if (routeContext && 'openLoginDialog' in routeContext && typeof routeContext.openLoginDialog === 'function') {
+        routeContext.openLoginDialog();
+      }
       return;
     }
 

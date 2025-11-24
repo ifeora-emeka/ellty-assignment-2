@@ -81,7 +81,9 @@ export function HomePage() {
 
   const handleReply = (postId: string) => {
     if (!authContext.isAuthenticated) {
-      routeContext?.openLoginDialog?.();
+      if (routeContext && 'openLoginDialog' in routeContext && typeof routeContext.openLoginDialog === 'function') {
+        routeContext.openLoginDialog();
+      }
       return;
     }
 
@@ -135,7 +137,9 @@ export function HomePage() {
 
   const handleNewCalculationClick = () => {
     if (!authContext.isAuthenticated) {
-      routeContext?.openSignupDialog?.();
+      if (routeContext && 'openSignupDialog' in routeContext && typeof routeContext.openSignupDialog === 'function') {
+        routeContext.openSignupDialog();
+      }
     } else {
       setNewPostDialogOpen(true);
     }
