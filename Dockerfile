@@ -36,9 +36,6 @@ RUN mkdir -p /app/data && chown -R expressuser:nodejs /app/data
 
 USER expressuser
 
-RUN npx prisma migrate deploy
-RUN npx prisma db seed
-
 EXPOSE 8080
 
-CMD npx prisma migrate deploy && node dist-server/server.js
+CMD npx prisma migrate deploy && npx prisma db seed && node dist-server/server.js
