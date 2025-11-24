@@ -26,9 +26,7 @@ export function PostDetailPage() {
 
   const handleReply = (postId: string) => {
     if (!isAuthenticated) {
-      if (routeContext?.openLoginDialog) {
-        routeContext.openLoginDialog();
-      }
+      routeContext?.openLoginDialog?.();
       return;
     }
 
@@ -56,7 +54,7 @@ export function PostDetailPage() {
   const handleSubmitReply = async (operation: string, operand: number) => {
     setReplyError('');
     createReply(
-      { postId: selectedPostId, data: { operation, operand } },
+      { postId: selectedPostId, data: { operation: operation as 'add' | 'subtract' | 'multiply' | 'divide', operand } },
       {
         onSuccess: () => {
           setReplyDialogOpen(false);
