@@ -1,4 +1,5 @@
 import { beforeAll, afterAll } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 import prisma from '../server/configs/database.config.js';
 
 beforeAll(async () => {

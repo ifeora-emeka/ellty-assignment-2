@@ -48,6 +48,9 @@ export const createPost = async (req: Request, res: Response) => {
 
 export const getPosts = async (req: Request, res: Response) => {
     try {
+        const limit = parseInt(req.query.limit as string) || 10;
+        const offset = parseInt(req.query.offset as string) || 0;
+
         const posts = await prisma.post.findMany({
             where: {
                 parentId: null,
@@ -69,6 +72,8 @@ export const getPosts = async (req: Request, res: Response) => {
             orderBy: {
                 createdAt: 'desc',
             },
+            take: limit,
+            skip: offset,
         });
 
         res.json({ posts });

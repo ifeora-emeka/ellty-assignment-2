@@ -32,7 +32,12 @@ COPY --from=builder --chown=expressuser:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=expressuser:nodejs /app/prisma.config.ts ./
 COPY --from=builder --chown=expressuser:nodejs /app/package*.json ./
 
+RUN mkdir -p /app/data && chown -R expressuser:nodejs /app/data
+
 USER expressuser
+
+RUN npx prisma migrate deploy
+RUN npx prisma db seed
 
 EXPOSE 8080
 
