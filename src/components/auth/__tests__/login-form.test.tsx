@@ -11,16 +11,16 @@ describe('LoginForm', () => {
     render(<LoginForm onSubmit={mockSubmit} />);
 
     expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/enter your password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
   });
 
-  it('should call onSubmit with username and password', async () => {
-    const mockSubmit = vi.fn();
+  it('should call onSubmit with credentials object', async () => {
+    const mockSubmit = vi.fn().mockResolvedValue(undefined);
     render(<LoginForm onSubmit={mockSubmit} />);
 
     const usernameInput = screen.getByLabelText(/username/i);
-    const passwordInput = screen.getByLabelText(/password/i);
+    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
     const submitButton = screen.getByRole('button', { name: /login/i });
 
     fireEvent.change(usernameInput, { target: { value: 'testuser' } });
@@ -28,27 +28,22 @@ describe('LoginForm', () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(mockSubmit).toHaveBeenCalledWith('testuser', 'password123');
+      expect(mockSubmit).toHaveBeenCalledWith({ username: 'testuser', password: 'password123' });
     });
   });
 
-  it('should display error message when provided', () => {
+  it('should toggle password visibility', () => {
     const mockSubmit = vi.fn();
-    render(<LoginForm onSubmit={mockSubmit} error="Invalid credentials" />);
+    render(<LoginForm onSubmit={mockSubmit} />);
 
-    expect(screen.getByText(/invalid credentials/i)).toBeInTheDocument();
-  });
+    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
+    expect(passwordInput).toHaveAttribute('type', 'password');
 
-  it('should disable form when disabled prop is true', () => {
-    const mockSubmit = vi.fn();
-    render(<LoginForm onSubmit={mockSubmit} disabled={true} />);
+    const eyeButton = screen.getAllByRole('button').find(btn => 
+      btn.querySelector('svg')?.classList.contains('lucide-eye')
+    );
+    fireEvent.click(eyeButton!);
 
-    const usernameInput = screen.getByLabelText(/username/i);
-    const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole('button', { name: /login/i });
-
-    expect(usernameInput).toBeDisabled();
-    expect(passwordInput).toBeDisabled();
-    expect(submitButton).toBeDisabled();
+    expect(passwordInput).toHaveAttribute('type', 'text');
   });
 });

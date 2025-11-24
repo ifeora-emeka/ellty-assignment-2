@@ -1,17 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouteContext } from '@tanstack/react-router';
 import { PostTree, NewPostForm } from '@/components/posts';
 import { PostTreeSkeleton } from '@/components/ui/loading-spinner';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useInfinitePosts, useCreatePost } from '@/lib/hooks/use-posts';
+import { useAuth } from '@/hooks/use-auth';
 import type { Post } from '@/lib/types/api.types';
 
 export function HomePage() {
   const [newPostDialogOpen, setNewPostDialogOpen] = useState(false);
   const navigate = useNavigate();
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const { state } = useAuth();
+  const context = useRouteContext({ from: '/__root' }) as { openSignupDialog: () => void } | undefined;
 
   const {
     data,
@@ -64,6 +67,14 @@ export function HomePage() {
     navigate({ to: '/posts/$postId', params: { postId } });
   };
 
+  const handleNewCalculationClick = () => {
+    if (!state.isAuthenticated) {
+      context?.openSignupDialog();
+    } else {
+      setNewPostDialogOpen(true);
+    }
+  };
+
   if (fetchError) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
@@ -84,7 +95,7 @@ export function HomePage() {
         </div>
         <Dialog open={newPostDialogOpen} onOpenChange={setNewPostDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="lg">New Calculation</Button>
+            <Button size="lg" onClick={handleNewCalculationClick}>New Calculation</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -109,7 +120,7 @@ export function HomePage() {
         <>
           <PostTree
             posts={allPosts as Post[]}
-            isAuthenticated={true}
+            isAuthenticated={state.isAuthenticated}
             onViewDetails={handleViewDetails}
           />
           

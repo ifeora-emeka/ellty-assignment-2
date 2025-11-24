@@ -48,15 +48,14 @@ describe('Header', () => {
     expect(mockSignup).toHaveBeenCalled();
   });
 
-  it('should call onLogout when logout button is clicked', () => {
+  it('should display user avatar with dropdown menu', () => {
     const mockLogout = vi.fn();
     const user = { id: '1', username: 'testuser' };
 
     render(<Header user={user} onLogout={mockLogout} />);
 
-    const logoutButton = screen.getByText('Logout');
-    fireEvent.click(logoutButton);
-
-    expect(mockLogout).toHaveBeenCalled();
+    const avatarButton = screen.getByRole('button', { name: 'TE' });
+    expect(avatarButton).toBeInTheDocument();
+    expect(avatarButton).toHaveAttribute('aria-haspopup', 'menu');
   });
 });

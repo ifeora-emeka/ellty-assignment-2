@@ -3,78 +3,67 @@ import { useState } from 'react';
 import { Layout } from '@/components/layout';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LoginForm, SignupForm } from '@/components/auth';
-import { mockLogin, mockSignup, mockLogout } from '@/__mocks__';
-import type { MockAuthUser } from '@/__mocks__';
+import { useAuth } from '@/hooks/use-auth';
+import { toast } from 'sonner';
 
 type AuthDialog = 'login' | 'signup' | null;
 
 export function RootLayout() {
-  const [user, setUser] = useState<MockAuthUser | null>(null);
+  const { state, login, signup, logout } = useAuth();
   const [authDialog, setAuthDialog] = useState<AuthDialog>(null);
-  const [authError, setAuthError] = useState<string>('');
-  const [authLoading, setAuthLoading] = useState(false);
 
-  const handleLogin = async (username: string, password: string) => {
-    setAuthError('');
-    setAuthLoading(true);
+  const handleLogin = async (data: { username: string; password: string }) => {
     try {
-      const user = await mockLogin(username, password);
-      setUser(user);
+      await login(data.username, data.password);
       setAuthDialog(null);
+      toast.success('Successfully logged in!');
     } catch (error) {
-      setAuthError(error instanceof Error ? error.message : 'Login failed');
-    } finally {
-      setAuthLoading(false);
+      toast.error(error instanceof Error ? error.message : 'Login failed');
+      throw error;
     }
   };
 
-  const handleSignup = async (username: string, password: string) => {
-    setAuthError('');
-    setAuthLoading(true);
+  const handleSignup = async (data: { username: string; password: string }) => {
     try {
-      const user = await mockSignup(username, password);
-      setUser(user);
+      await signup(data.username, data.password);
       setAuthDialog(null);
+      toast.success('Account created successfully!');
     } catch (error) {
-      setAuthError(error instanceof Error ? error.message : 'Signup failed');
-    } finally {
-      setAuthLoading(false);
+      toast.error(error instanceof Error ? error.message : 'Signup failed');
+      throw error;
     }
   };
 
   const handleLogout = async () => {
     try {
-      await mockLogout();
-      setUser(null);
+      await logout();
+      toast.success('Logged out successfully');
     } catch (error) {
-      console.error('Logout failed:', error);
+      toast.error('Logout failed');
     }
   };
 
   const openLoginDialog = () => {
-    setAuthError('');
     setAuthDialog('login');
   };
 
   const openSignupDialog = () => {
-    setAuthError('');
     setAuthDialog('signup');
   };
 
   const closeAuthDialog = () => {
     setAuthDialog(null);
-    setAuthError('');
   };
 
   return (
     <>
       <Layout
-        user={user}
+        user={state.user}
         onLogin={openLoginDialog}
         onSignup={openSignupDialog}
         onLogout={handleLogout}
       >
-        <Outlet />
+        <Outlet context={{ openLoginDialog, openSignupDialog }} />
       </Layout>
 
       <Dialog open={authDialog === 'login'} onOpenChange={(open) => !open && closeAuthDialog()}>
@@ -82,11 +71,7 @@ export function RootLayout() {
           <DialogHeader>
             <DialogTitle>Login to Number Tree</DialogTitle>
           </DialogHeader>
-          <LoginForm
-            onSubmit={handleLogin}
-            error={authError}
-            disabled={authLoading}
-          />
+          <LoginForm onSubmit={handleLogin} />
         </DialogContent>
       </Dialog>
 
@@ -95,11 +80,7 @@ export function RootLayout() {
           <DialogHeader>
             <DialogTitle>Sign Up for Number Tree</DialogTitle>
           </DialogHeader>
-          <SignupForm
-            onSubmit={handleSignup}
-            error={authError}
-            disabled={authLoading}
-          />
+          <SignupForm onSubmit={handleSignup} />
         </DialogContent>
       </Dialog>
     </>
