@@ -14,6 +14,30 @@ model User {
   id        String   @id @default(uuid())
   username  String   @unique
   password  String
+  posts     Post[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id        String      @id @default(uuid())
+  value     Float
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    Post?       @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Post[]      @relation("PostReplies")
+  operation Operation?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model Operation {
+  id        String   @id @default(uuid())
+  type      String
+  operand   Float
+  postId    String   @unique
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -17,6 +17,7 @@ dist-server
 .github/assessment.md
 .github/tasks.md
 dev.db
+test.db
 prisma/*.db
 prisma/*.db-journal
 # Editor directories and files
