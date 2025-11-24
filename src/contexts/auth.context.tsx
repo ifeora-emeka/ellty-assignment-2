@@ -78,12 +78,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const signup = async (username: string, password: string) => {
-    const user = await authService.signup({ username, password });
-    setState({
-      user,
-      isLoading: false,
-      isAuthenticated: true,
-    });
+    await authService.signup({ username, password });
   };
 
   const logout = async () => {
