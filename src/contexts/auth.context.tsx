@@ -1,6 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react';
-import { authService } from '@/lib/services/auth.service';
-import type { AuthUser } from '@/lib/types/api.types';
+import { api } from '@/lib/api-client';
+import { API_ENDPOINTS } from '@/lib/api-config';
+import type { AuthUser, AuthResponse, LoginRequest, SignupRequest } from '@/lib/types/api.types';
 import { AuthContext } from './auth-context';
 
 interface AuthState {
@@ -20,9 +21,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: false,
   });
 
+  const fetchMe = async () => {
+    const response = await api.get<AuthResponse>(API_ENDPOINTS.auth.me);
+    return response.user;
+  };
+
   const refreshUser = async () => {
     try {
-      const user = await authService.me();
+      const user = await fetchMe();
       setState({
         user,
         isLoading: false,
@@ -42,7 +48,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const initAuth = async () => {
       try {
-        const user = await authService.me();
+        const user = await fetchMe();
         if (isMounted) {
           setState({
             user,
@@ -69,20 +75,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const login = async (username: string, password: string) => {
-    const user = await authService.login({ username, password });
+    const data: LoginRequest = { username, password };
+    const response = await api.post<AuthResponse>(API_ENDPOINTS.auth.login, data);
     setState({
-      user,
+      user: response.user,
       isLoading: false,
       isAuthenticated: true,
     });
   };
 
   const signup = async (username: string, password: string) => {
-    await authService.signup({ username, password });
+    const data: SignupRequest = { username, password };
+    await api.post<AuthResponse>(API_ENDPOINTS.auth.signup, data);
   };
 
   const logout = async () => {
-    await authService.logout();
+    await api.post(API_ENDPOINTS.auth.logout);
     setState({
       user: null,
       isLoading: false,

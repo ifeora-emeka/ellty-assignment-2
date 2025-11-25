@@ -1,8 +1,30 @@
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+
+const newPostSchema = z.object({
+  value: z.string().min(1, 'Please enter a number').refine(
+    (val) => !isNaN(parseFloat(val)),
+    'Please enter a valid number'
+  ).refine(
+    (val) => isFinite(parseFloat(val)),
+    'Number must be finite'
+  ),
+});
+
+type NewPostFormValues = z.infer<typeof newPostSchema>;
 
 interface NewPostFormProps {
   onSubmit: (value: number) => void;
@@ -11,54 +33,53 @@ interface NewPostFormProps {
 }
 
 export function NewPostForm({ onSubmit, error, disabled }: NewPostFormProps) {
-  const [value, setValue] = useState('');
-  const [validationError, setValidationError] = useState('');
+  const form = useForm<NewPostFormValues>({
+    resolver: zodResolver(newPostSchema),
+    mode: 'onChange',
+    defaultValues: {
+      value: '',
+    },
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setValidationError('');
-
-    const numValue = parseFloat(value);
-    
-    if (isNaN(numValue)) {
-      setValidationError('Please enter a valid number');
-      return;
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
     }
+  }, [error]);
 
-    if (!isFinite(numValue)) {
-      setValidationError('Number must be finite');
-      return;
-    }
-
+  const handleSubmit = (values: NewPostFormValues) => {
+    const numValue = parseFloat(values.value);
     onSubmit(numValue);
-    setValue('');
+    form.reset();
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {(error || validationError) && (
-        <Alert variant="destructive">
-          <AlertDescription>{error || validationError}</AlertDescription>
-        </Alert>
-      )}
-      
-      <div className="space-y-2">
-        <Label htmlFor="value">Starting Number</Label>
-        <Input
-          id="value"
-          type="number"
-          step="any"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          disabled={disabled}
-          required
-          placeholder="Enter any number"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="value"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Starting Number</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  step="any"
+                  placeholder="Enter any number"
+                  disabled={disabled}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
 
-      <Button type="submit" className="w-full" disabled={disabled}>
-        Create Calculation
-      </Button>
-    </form>
+        <Button type="submit" className="w-full" disabled={disabled}>
+          Create Calculation
+        </Button>
+      </form>
+    </Form>
   );
 }

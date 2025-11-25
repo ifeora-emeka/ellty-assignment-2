@@ -6,7 +6,7 @@ import { SectionPlaceholder } from '@/components/ui/section-placeholder';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft } from 'lucide-react';
-import { usePost, useCreateReply } from '@/lib/hooks/use-posts';
+import { usePost, useCreateReply } from '@/hooks/use-posts';
 import { useAuth } from '@/hooks/use-auth';
 import type { Post } from '@/lib/types/api.types';
 import { toast } from 'sonner';

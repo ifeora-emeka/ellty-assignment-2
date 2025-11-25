@@ -1,9 +1,19 @@
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 
 interface OperationFormProps {
   parentValue: number;
@@ -21,6 +31,25 @@ const operations = [
   { value: 'divide', label: 'Divide (÷)', symbol: '÷' },
 ];
 
+const createOperationSchema = (_parentValue: number) => z.object({
+  operation: z.enum(['add', 'subtract', 'multiply', 'divide']),
+  operand: z.string().min(1, 'Please enter a number').refine(
+    (val) => !isNaN(parseFloat(val)),
+    'Please enter a valid number'
+  ).refine(
+    (val) => isFinite(parseFloat(val)),
+    'Number must be finite'
+  ),
+}).refine(
+  (data) => !(data.operation === 'divide' && parseFloat(data.operand) === 0),
+  {
+    message: 'Cannot divide by zero',
+    path: ['operand'],
+  }
+);
+
+type OperationFormValues = z.infer<ReturnType<typeof createOperationSchema>>;
+
 export function OperationForm({ 
   parentValue, 
   onSubmit, 
@@ -28,15 +57,29 @@ export function OperationForm({
   error, 
   disabled 
 }: OperationFormProps) {
-  const [operation, setOperation] = useState('add');
-  const [operand, setOperand] = useState('');
-  const [validationError, setValidationError] = useState('');
+  const form = useForm<OperationFormValues>({
+    resolver: zodResolver(createOperationSchema(parentValue)),
+    mode: 'onChange',
+    defaultValues: {
+      operation: 'add',
+      operand: '',
+    },
+  });
+
+  const watchedOperation = form.watch('operation');
+  const watchedOperand = form.watch('operand');
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
 
   const calculatePreview = (): number | null => {
-    const numOperand = parseFloat(operand);
+    const numOperand = parseFloat(watchedOperand);
     if (isNaN(numOperand)) return null;
 
-    switch (operation) {
+    switch (watchedOperation) {
       case 'add':
         return parentValue + numOperand;
       case 'subtract':
@@ -50,93 +93,89 @@ export function OperationForm({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setValidationError('');
-
-    const numOperand = parseFloat(operand);
-    
-    if (isNaN(numOperand)) {
-      setValidationError('Please enter a valid number');
-      return;
-    }
-
-    if (!isFinite(numOperand)) {
-      setValidationError('Number must be finite');
-      return;
-    }
-
-    if (operation === 'divide' && numOperand === 0) {
-      setValidationError('Cannot divide by zero');
-      return;
-    }
-
-    onSubmit(operation, numOperand);
+  const handleSubmit = (values: OperationFormValues) => {
+    const numOperand = parseFloat(values.operand);
+    onSubmit(values.operation, numOperand);
   };
 
   const preview = calculatePreview();
-  const selectedOp = operations.find(op => op.value === operation);
+  const selectedOp = operations.find(op => op.value === watchedOperation);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {(error || validationError) && (
-        <Alert variant="destructive">
-          <AlertDescription>{error || validationError}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="p-3 bg-muted rounded-md">
-        <div className="text-sm text-muted-foreground">Operating on:</div>
-        <div className="text-2xl font-bold font-mono">{parentValue}</div>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="operation">Operation</Label>
-        <Select value={operation} onValueChange={setOperation} disabled={disabled}>
-          <SelectTrigger id="operation">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {operations.map((op) => (
-              <SelectItem key={op.value} value={op.value}>
-                {op.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="operand">Number</Label>
-        <Input
-          id="operand"
-          type="number"
-          step="any"
-          value={operand}
-          onChange={(e) => setOperand(e.target.value)}
-          disabled={disabled}
-          required
-          placeholder="Enter a number"
-        />
-      </div>
-
-      {preview !== null && (
-        <div className="p-3 bg-primary/10 rounded-md">
-          <div className="text-sm font-medium">Result Preview:</div>
-          <div className="text-lg font-mono">
-            {parentValue} {selectedOp?.symbol} {operand} = <span className="font-bold">{preview}</span>
-          </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <div className="p-3 bg-muted rounded-md">
+          <div className="text-sm text-muted-foreground">Operating on:</div>
+          <div className="text-2xl font-bold font-mono">{parentValue}</div>
         </div>
-      )}
+        
+        <FormField
+          control={form.control}
+          name="operation"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Operation</FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value}
+                disabled={disabled}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {operations.map((op) => (
+                    <SelectItem key={op.value} value={op.value}>
+                      {op.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      <div className="flex gap-2">
-        <Button type="submit" className="flex-1" disabled={disabled}>
-          Apply Operation
-        </Button>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={disabled}>
-          Cancel
-        </Button>
-      </div>
-    </form>
+        <FormField
+          control={form.control}
+          name="operand"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Number</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  step="any"
+                  placeholder="Enter a number"
+                  disabled={disabled}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {preview !== null && (
+          <div className="p-3 bg-primary/10 rounded-md">
+            <div className="text-sm font-medium">Result Preview:</div>
+            <div className="text-lg font-mono">
+              {parentValue} {selectedOp?.symbol} {watchedOperand} = <span className="font-bold">{preview}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button type="submit" className="flex-1" disabled={disabled}>
+            Apply Operation
+          </Button>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={disabled}>
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }

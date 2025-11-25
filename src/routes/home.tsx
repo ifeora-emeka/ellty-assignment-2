@@ -5,7 +5,7 @@ import { PostTreeSkeleton } from '@/components/ui/loading-spinner';
 import { SectionPlaceholder } from '@/components/ui/section-placeholder';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useInfinitePosts, useCreatePost, useCreateReply } from '@/lib/hooks/use-posts';
+import { useInfinitePosts, useCreatePost, useCreateReply } from '@/hooks/use-posts';
 import { useAuth } from '@/hooks/use-auth';
 import type { Post } from '@/lib/types/api.types';
 import { toast } from 'sonner';
