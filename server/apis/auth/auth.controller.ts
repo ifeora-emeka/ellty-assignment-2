@@ -56,7 +56,13 @@ export const logout = (req: Request, res: Response) => {
         if (err) {
             return res.status(500).json({ error: 'Internal server error' });
         }
-        res.json({ message: 'Logged out successfully' });
+        req.session.destroy((err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+            res.clearCookie('connect.sid');
+            res.json({ message: 'Logged out successfully' });
+        });
     });
 };
 

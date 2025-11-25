@@ -15,6 +15,10 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 if (process.env.NODE_ENV === 'development') {
   app.use(cors({
     origin: 'http://localhost:5173',
