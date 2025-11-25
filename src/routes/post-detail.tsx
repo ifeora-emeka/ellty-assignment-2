@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate, useRouteContext } from '@tanstack/react-router';
+import { useParams, useNavigate } from '@tanstack/react-router';
 import { PostTree, OperationForm } from '@/components/posts';
 import { PostTreeSkeleton } from '@/components/ui/loading-spinner';
 import { SectionPlaceholder } from '@/components/ui/section-placeholder';
@@ -15,8 +15,8 @@ import { ApiError } from '@/lib/api-client';
 export function PostDetailPage() {
   const { postId } = useParams({ strict: false });
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-  const routeContext = useRouteContext({ strict: false });
+  const authContext = useAuth();
+  const { isAuthenticated } = authContext;
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string>('');
   const [selectedPostValue, setSelectedPostValue] = useState<number>(0);
@@ -26,9 +26,7 @@ export function PostDetailPage() {
 
   const handleReply = (postId: string) => {
     if (!isAuthenticated) {
-      if (routeContext && 'openLoginDialog' in routeContext && typeof routeContext.openLoginDialog === 'function') {
-        routeContext.openLoginDialog();
-      }
+      authContext.openLoginDialog();
       return;
     }
 

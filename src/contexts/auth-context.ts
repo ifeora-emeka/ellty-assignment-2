@@ -12,6 +12,9 @@ export interface AuthContextValue extends AuthState {
   signup: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  openLoginDialog: () => void;
+  openSignupDialog: () => void;
+  setAuthDialogHandlers: (handlers: { openLogin: () => void; openSignup: () => void }) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);

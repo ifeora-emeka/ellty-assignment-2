@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { api } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api-config';
 import type { AuthUser, AuthResponse, LoginRequest, SignupRequest } from '@/lib/types/api.types';
@@ -8,6 +8,11 @@ interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+}
+
+interface DialogHandlers {
+  openLogin: () => void;
+  openSignup: () => void;
 }
 
 interface AuthProviderProps {
@@ -20,6 +25,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isLoading: true,
     isAuthenticated: false,
   });
+  
+  const dialogHandlersRef = useRef<DialogHandlers | null>(null);
 
   const fetchMe = async () => {
     const response = await api.get<AuthResponse>(API_ENDPOINTS.auth.me);
@@ -98,6 +105,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
   };
 
+  const setAuthDialogHandlers = useCallback((handlers: DialogHandlers) => {
+    dialogHandlersRef.current = handlers;
+  }, []);
+
+  const openLoginDialog = useCallback(() => {
+    dialogHandlersRef.current?.openLogin();
+  }, []);
+
+  const openSignupDialog = useCallback(() => {
+    dialogHandlersRef.current?.openSignup();
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -106,6 +125,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         signup,
         logout,
         refreshUser,
+        openLoginDialog,
+        openSignupDialog,
+        setAuthDialogHandlers,
       }}
     >
       {children}

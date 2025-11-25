@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useRouteContext } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { PostTree, NewPostForm, OperationForm } from '@/components/posts';
 import { PostTreeSkeleton } from '@/components/ui/loading-spinner';
 import { SectionPlaceholder } from '@/components/ui/section-placeholder';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useInfinitePosts, useCreatePost, useCreateReply } from '@/hooks/use-posts';
 import { useAuth } from '@/hooks/use-auth';
 import type { Post } from '@/lib/types/api.types';
@@ -20,7 +20,6 @@ export function HomePage() {
   const navigate = useNavigate();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const authContext = useAuth();
-  const routeContext = useRouteContext({ strict: false });
 
   const {
     data,
@@ -81,9 +80,7 @@ export function HomePage() {
 
   const handleReply = (postId: string) => {
     if (!authContext.isAuthenticated) {
-      if (routeContext && 'openLoginDialog' in routeContext && typeof routeContext.openLoginDialog === 'function') {
-        routeContext.openLoginDialog();
-      }
+      authContext.openLoginDialog();
       return;
     }
 
@@ -137,12 +134,10 @@ export function HomePage() {
 
   const handleNewCalculationClick = () => {
     if (!authContext.isAuthenticated) {
-      if (routeContext && 'openSignupDialog' in routeContext && typeof routeContext.openSignupDialog === 'function') {
-        routeContext.openSignupDialog();
-      }
-    } else {
-      setNewPostDialogOpen(true);
+      authContext.openLoginDialog();
+      return;
     }
+    setNewPostDialogOpen(true);
   };
 
   if (fetchError) {
@@ -169,9 +164,7 @@ export function HomePage() {
           <p className="text-muted-foreground">Explore mathematical conversations</p>
         </div>
         <Dialog open={newPostDialogOpen} onOpenChange={setNewPostDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="lg" onClick={handleNewCalculationClick}>New Calculation</Button>
-          </DialogTrigger>
+          <Button size="lg" onClick={handleNewCalculationClick}>New Calculation</Button>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Start a New Calculation</DialogTitle>

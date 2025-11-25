@@ -1,5 +1,5 @@
 import { Outlet } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LoginForm, SignupForm } from '@/components/auth';
@@ -12,6 +12,13 @@ type AuthDialog = 'login' | 'signup' | null;
 export function RootLayout() {
   const authContext = useAuth();
   const [authDialog, setAuthDialog] = useState<AuthDialog>(null);
+
+  useEffect(() => {
+    authContext.setAuthDialogHandlers({
+      openLogin: () => setAuthDialog('login'),
+      openSignup: () => setAuthDialog('signup'),
+    });
+  }, [authContext]);
 
   const handleLogin = async (data: { username: string; password: string }) => {
     try {
