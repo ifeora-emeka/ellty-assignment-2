@@ -1,6 +1,31 @@
 import { Request, Response } from 'express';
 import prisma from '../../configs/database.config.js';
 
+interface PostUser {
+    id: string;
+    username: string;
+    createdAt: Date;
+}
+
+interface Operation {
+    id: string;
+    type: string;
+    operand: number;
+    postId: string;
+}
+
+interface PostWithReplies {
+    id: string;
+    value: number;
+    userId: string;
+    parentId: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    user: PostUser;
+    operation: Operation | null;
+    replies: PostWithReplies[];
+}
+
 const calculateResult = (parentValue: number, operation: string, operand: number): number => {
     switch (operation) {
         case 'add':
@@ -84,7 +109,7 @@ export const getPosts = async (req: Request, res: Response) => {
     }
 };
 
-const fetchPostWithAllReplies = async (postId: string): Promise<any> => {
+const fetchPostWithAllReplies = async (postId: string): Promise<PostWithReplies | null> => {
     const post = await prisma.post.findUnique({
         where: { id: postId },
         include: {
